@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 无外部依赖
- * [OUTPUT]: BrandIcon 组件，根据分类名返回对应品牌 SVG 图标
- * [POS]: 图标映射层，将分类名映射到品牌 logo，使用 currentColor 兼容亮/暗背景
+ * [OUTPUT]: BrandIcon 组件 + ICON_LIST 图标库（供 CategoryForm 图标选择器使用）
+ * [POS]: 图标映射层，PNG 图标来自 public/icons/，SVG path 来自 simpleicons.org，统一 22% 圆角
  *
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -9,40 +9,9 @@
 import React from 'react';
 import { Key, BookOpen } from 'lucide-react';
 
-// ─── Brand SVG Paths ──────────────────────────────────────────────────────────
-// Source: simpleicons.org / lobehub/icons
+// ─── SVG Path Data (source: simpleicons.org) ─────────────────────────────────
+// 注：openai/anthropic/gemini/perplexity/x 已升级为 aihubmix SVG 文件，不再需要 path
 
-const PATH_OPENAI =
-  'M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 ' +
-  '.7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 ' +
-  '3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l' +
-  '2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 ' +
-  '0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a' +
-  '.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 ' +
-  '15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a' +
-  '.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 ' +
-  '0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l' +
-  '-2.5974 1.4997-2.6067-1.4997Z';
-
-const PATH_GEMINI =
-  'M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81' +
-  'Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81a12.3 12.3 0 0 1-3.81 2.58Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81Z';
-
-// Adobe Photoshop (simpleicons)
-const PATH_PHOTOSHOP =
-  'M9.85 8.42c-.37-.15-.77-.21-1.18-.2-.26 0-.49 0-.68.01-.2-.01-.34 0-.41.01v3.36c.14.01.27.02.39.02h.53c.39 0 .78-.06 1.15-.18.32-.09.6-.28.82-.53' +
-  '.21-.25.31-.59.31-1.03.01-.31-.07-.62-.23-.89-.17-.26-.41-.46-.7-.57zM19.75.3H4.25C1.9.3 0 2.2 0 4.55v14.899c0 2.35 1.9 4.25 4.25 4.25h15.5c2.35 0 ' +
-  '4.25-1.9 4.25-4.25V4.55C24 2.2 22.1.3 19.75.3zm-7.391 11.65c-.399.56-.959.98-1.609 1.22-.68.25-1.43.34-2.25.34-.24 0-.4 0-.5-.01s-.24-.01-.43-.01v3.209' +
-  'c.01.07-.04.131-.11.141H5.52c-.08 0-.12-.041-.12-.131V6.42c0-.07.03-.11.1-.11.17 0 .33 0 .56-.01.24-.01.49-.01.76-.02s.56-.01.87-.02c.31-.01.61-.01.91-.01' +
-  '.82 0 1.5.1 2.06.31.5.17.96.45 1.34.82.32.32.57.71.73 1.14.149.42.229.85.229 1.3.001.86-.199 1.57-.6 2.13zm7.091 3.89c-.28.4-.671.709-1.12.891-.49.209' +
-  '-1.09.318-1.811.318-.459 0-.91-.039-1.359-.129-.35-.061-.7-.17-1.02-.32-.07-.039-.121-.109-.111-.189v-1.74c0-.029.011-.07.041-.09.029-.02.06-.01.09.01' +
-  '.39.23.8.391 1.24.49.379.1.779.15 1.18.15.38 0 .65-.051.83-.141.16-.07.27-.24.27-.42 0-.141-.08-.27-.24-.4-.16-.129-.489-.279-.979-.471-.51-.18-.979-.42' +
-  '-1.42-.719-.31-.221-.569-.51-.761-.85-.159-.32-.239-.67-.229-1.021 0-.43.12-.84.341-1.21.25-.4.619-.72 1.049-.92.469-.239 1.059-.349 1.769-.349.41 0 ' +
-  '.83.03 1.24.09.3.04.59.12.86.23.039.01.08.05.1.09.01.04.02.08.02.12v1.63c0 .04-.02.08-.05.1-.09.02-.14.02-.18 0-.3-.16-.62-.27-.96-.34-.37-.08-.74-.13' +
-  '-1.12-.13-.2-.01-.41.02-.601.07-.129.03-.24.1-.31.2-.05.08-.08.18-.08.27s.04.18.101.26c.09.11.209.2.34.27.229.12.47.23.709.33.541.18 1.061.43 1.541.73' +
-  '.33.209.6.49.789.83.16.318.24.67.23 1.029.011.471-.129.94-.389 1.331';
-
-// Midjourney: simplified boat silhouette (lobehub)
 const PATH_MIDJOURNEY =
   'M22.369 17.676c-1.387 1.259-3.17 2.378-5.332 3.417.044.03.086.057.13.083l.018.01.019.012c.216.123.42.184.641.184.222 0 .426-.061.642-.184l.018-.011.019-.011c' +
   '.14-.084.266-.178.492-.366l.178-.148c.279-.232.426-.342.625-.456.304-.174.612-.266.949-.266.337 0 .645.092.949.266l.023.014c.188.109.334.219.602.442l.178.148c' +
@@ -70,27 +39,175 @@ const PATH_MIDJOURNEY =
   '4.974 9.191l.038.132.022-.004c.71-.133 1.284-.063 1.963.18l.027.01.066.024.046.018-.025-.073c-.811-2.307-2.208-4.62-3.936-6.594l-.058-.065c-1.02-1.155-2.103' +
   '-2.132-3.15-2.856l-.015-.011z';
 
-// ─── Icon Component ───────────────────────────────────────────────────────────
-interface BrandIconProps {
-  name: string;
-  size?: number;
+const PATH_PHOTOSHOP =
+  'M9.85 8.42c-.37-.15-.77-.21-1.18-.2-.26 0-.49 0-.68.01-.2-.01-.34 0-.41.01v3.36c.14.01.27.02.39.02h.53c.39 0 .78-.06 1.15-.18.32-.09.6-.28.82-.53' +
+  '.21-.25.31-.59.31-1.03.01-.31-.07-.62-.23-.89-.17-.26-.41-.46-.7-.57zM19.75.3H4.25C1.9.3 0 2.2 0 4.55v14.899c0 2.35 1.9 4.25 4.25 4.25h15.5c2.35 0 ' +
+  '4.25-1.9 4.25-4.25V4.55C24 2.2 22.1.3 19.75.3zm-7.391 11.65c-.399.56-.959.98-1.609 1.22-.68.25-1.43.34-2.25.34-.24 0-.4 0-.5-.01s-.24-.01-.43-.01v3.209' +
+  'c.01.07-.04.131-.11.141H5.52c-.08 0-.12-.041-.12-.131V6.42c0-.07.03-.11.1-.11.17 0 .33 0 .56-.01.24-.01.49-.01.76-.02s.56-.01.87-.02c.31-.01.61-.01.91-.01' +
+  '.82 0 1.5.1 2.06.31.5.17.96.45 1.34.82.32.32.57.71.73 1.14.149.42.229.85.229 1.3.001.86-.199 1.57-.6 2.13zm7.091 3.89c-.28.4-.671.709-1.12.891-.49.209' +
+  '-1.09.318-1.811.318-.459 0-.91-.039-1.359-.129-.35-.061-.7-.17-1.02-.32-.07-.039-.121-.109-.111-.189v-1.74c0-.029.011-.07.041-.09.029-.02.06-.01.09.01' +
+  '.39.23.8.391 1.24.49.379.1.779.15 1.18.15.38 0 .65-.051.83-.141.16-.07.27-.24.27-.42 0-.141-.08-.27-.24-.4-.16-.129-.489-.279-.979-.471-.51-.18-.979-.42' +
+  '-1.42-.719-.31-.221-.569-.51-.761-.85-.159-.32-.239-.67-.229-1.021 0-.43.12-.84.341-1.21.25-.4.619-.72 1.049-.92.469-.239 1.059-.349 1.769-.349.41 0 ' +
+  '.83.03 1.24.09.3.04.59.12.86.23.039.01.08.05.1.09.01.04.02.08.02.12v1.63c0 .04-.02.08-.05.1-.09.02-.14.02-.18 0-.3-.16-.62-.27-.96-.34-.37-.08-.74-.13' +
+  '-1.12-.13-.2-.01-.41.02-.601.07-.129.03-.24.1-.31.2-.05.08-.08.18-.08.27s.04.18.101.26c.09.11.209.2.34.27.229.12.47.23.709.33.541.18 1.061.43 1.541.73' +
+  '.33.209.6.49.789.83.16.318.24.67.23 1.029.011.471-.129.94-.389 1.331';
+
+
+const PATH_META =
+  'M6.915 4.03c-1.968 0-3.683 1.28-4.871 3.113C.704 9.208 0 11.883 0 14.449c0 .706.07 1.369.21 1.973a6.624 6.624 0 0 0 .265.86 5.297 5.297 0 0 0 .371.761c.696 ' +
+  '1.159 1.818 1.927 3.593 1.927 1.497 0 2.633-.671 3.965-2.444.76-1.012 1.144-1.626 2.663-4.32l.756-1.339.186-.325c.061.1.121.196.183.3l2.152 3.595c.724 1.21 ' +
+  '1.665 2.556 2.47 3.314 1.046.987 1.992 1.22 3.06 1.22 1.075 0 1.876-.355 2.455-.843a3.743 3.743 0 0 0 .81-.973c.542-.939.861-2.127.861-3.745 0-2.72-.681-5.357 ' +
+  '-2.084-7.45-1.282-1.912-2.957-2.93-4.716-2.93-1.047 0-2.088.467-3.053 1.308-.652.57-1.257 1.29-1.82 2.05-.69-.875-1.335-1.547-1.958-2.056-1.182-.966-2.315-1.303 ' +
+  '-3.454-1.303zm10.16 2.053c1.147 0 2.188.758 2.992 1.999 1.132 1.748 1.647 4.195 1.647 6.4 0 1.548-.368 2.9-1.839 2.9-.58 0-1.027-.23-1.664-1.004-.496-.601 ' +
+  '-1.343-1.878-2.832-4.358l-.617-1.028a44.908 44.908 0 0 0-1.255-1.98c.07-.109.141-.224.211-.327 1.12-1.667 2.118-2.602 3.358-2.602zm-10.201.553c1.265 0 2.058.791 ' +
+  '2.675 1.446.307.327.737.871 1.234 1.579l-1.02 1.566c-.757 1.163-1.882 3.017-2.837 4.338-1.191 1.649-1.81 1.817-2.486 1.817-.524 0-1.038-.237-1.383-.794-.263-.426 ' +
+  '-.464-1.13-.464-2.046 0-2.221.63-4.535 1.66-6.088.454-.687.964-1.226 1.533-1.533a2.264 2.264 0 0 1 1.088-.285z';
+
+const PATH_CURSOR = 'M11.503.131 1.891 5.678a.84.84 0 0 0-.42.726v11.188c0 .3.162.575.42.724l9.609 5.55a1 1 0 0 0 .998 0l9.61-5.55a.84.84 0 0 0 .42-.724V6.404a.84.84 0 0 0-.42-.726L12.497.131a1.01 1.01 0 0 0-.996 0M2.657 6.338h18.55c.263 0 .43.287.297.515L12.23 22.918c-.062.107-.229.064-.229-.06V12.335a.59.59 0 0 0-.295-.51l-9.11-5.257c-.109-.063-.064-.23.061-.23';
+
+const PATH_GITHUB = 'M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12';
+
+const PATH_NOTION = 'M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.981-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.841-.046.935-.56.935-1.167V6.354c0-.606-.233-.933-.748-.887l-15.177.887c-.56.047-.747.327-.747.933zm14.337.745c.093.42 0 .84-.42.888l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.748 0-.935-.234-1.495-.933l-4.577-7.186v6.952L12.21 19s0 .84-1.168.84l-3.222.186c-.093-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.456-.233 4.764 7.279v-6.44l-1.215-.139c-.093-.514.28-.887.747-.933zM1.936 1.035l13.31-.98c1.634-.14 2.055-.047 3.082.7l4.249 2.986c.7.513.934.653.934 1.213v16.378c0 1.026-.373 1.634-1.68 1.726l-15.458.934c-.98.047-1.448-.093-1.962-.747l-3.129-4.06c-.56-.747-.793-1.306-.793-1.96V2.667c0-.839.374-1.54 1.447-1.632z';
+
+
+// ─── Brand Colors (bg, fg) for SVG/Letter badge tools ─────────────────────────
+const BRAND_COLORS: Record<string, [string, string]> = {
+  midjourney: ['#f3f4f6', '#374151'],
+  cursor:     ['#000000', '#ffffff'],
+  meta:       ['#0082FB', '#ffffff'],
+  github:     ['#24292F', '#ffffff'],
+  notion:     ['#000000', '#ffffff'],
+  photoshop:  ['#f3f4f6', '#374151'],
+  stability:  ['#7C3AED', '#ffffff'],
+  runway:     ['#000000', '#ffffff'],
+};
+
+// ─── Icon Registry ────────────────────────────────────────────────────────────
+export interface IconDef {
+  slug: string;
+  label: string;
+  path?: string;  // SVG path (simpleicons.org)
+  img?: string;   // URL in public/icons/
 }
 
-function SvgIcon({ path, size }: { path: string; size: number }) {
+export const ICON_LIST: IconDef[] = [
+  { slug: 'openai',       label: 'ChatGPT',     img: '/icons/openai.svg' },
+  { slug: 'anthropic',    label: 'Claude',      img: '/icons/anthropic.svg' },
+  { slug: 'gemini',       label: 'Gemini',      img: '/icons/gemini.svg' },
+  { slug: 'midjourney',   label: 'Midjourney',  path: PATH_MIDJOURNEY },
+  { slug: 'deepseek',     label: 'DeepSeek',    img: '/icons/deepseek.png' },
+  { slug: 'perplexity',   label: 'Perplexity',  img: '/icons/perplexity.svg' },
+  { slug: 'cursor',       label: 'Cursor',      path: PATH_CURSOR },
+  { slug: 'meta',         label: 'Meta AI',     path: PATH_META },
+  { slug: 'github',       label: 'Copilot',     path: PATH_GITHUB },
+  { slug: 'notion',       label: 'Notion',      path: PATH_NOTION },
+  { slug: 'x',            label: 'Grok',        img: '/icons/x.svg' },
+  { slug: 'stability',    label: 'Stable Diff' },
+  { slug: 'suno',         label: 'Suno',        img: '/icons/suno.png' },
+  { slug: 'runway',       label: 'Runway' },
+  { slug: 'elevenlabs',   label: 'ElevenLabs',  img: '/icons/elevenlabs.png' },
+  { slug: 'doubao',       label: '豆包',        img: '/icons/doubao.png' },
+  { slug: 'volcengine',   label: '火山引擎',    img: '/icons/volcengine.png' },
+  { slug: 'kling',        label: '可灵',        img: '/icons/kling.png' },
+  { slug: 'wenxin',       label: '文心一言',    img: '/icons/wenxin.png' },
+  { slug: 'qwen',         label: '通义千问',    img: '/icons/qwen.png' },
+  { slug: 'jimeng',       label: '即梦',        img: '/icons/jimeng.png' },
+  { slug: 'iflytek',      label: '讯飞星火',    img: '/icons/iflytek.png' },
+  { slug: 'huggingface',  label: 'HuggingFace', img: '/icons/huggingface.png' },
+  { slug: 'photoshop',    label: 'Photoshop',   path: PATH_PHOTOSHOP },
+  { slug: 'flowith',     label: 'Flowith',     img: '/icons/flowith.png' },
+];
+
+// ─── Name → Slug mapping (backward compat for existing categories) ────────────
+const NAME_RULES: [string, string][] = [
+  ['gpt', 'openai'], ['openai', 'openai'], ['chatgpt', 'openai'],
+  ['claude', 'anthropic'], ['anthropic', 'anthropic'],
+  ['gemini', 'gemini'],
+  ['midjourney', 'midjourney'],
+  ['deepseek', 'deepseek'],
+  ['kimi', 'deepseek'], ['moonshot', 'deepseek'],
+  ['doubao', 'doubao'], ['豆包', 'doubao'], ['字节', 'doubao'],
+  ['wenxin', 'wenxin'], ['文心', 'wenxin'], ['baidu', 'wenxin'], ['百度', 'wenxin'],
+  ['qwen', 'qwen'], ['通义', 'qwen'], ['alibaba', 'qwen'], ['阿里', 'qwen'],
+  ['kuaishou', 'kling'], ['快手', 'kling'], ['kling', 'kling'], ['可灵', 'kling'],
+  ['volcengine', 'volcengine'], ['火山', 'volcengine'],
+  ['psai', 'photoshop'], ['ps ai', 'photoshop'],
+  ['cursor', 'cursor'],
+  ['perplexity', 'perplexity'],
+  ['hugging', 'huggingface'],
+  ['meta', 'meta'], ['llama', 'meta'],
+  ['suno', 'suno'], ['runway', 'runway'],
+  ['stable', 'stability'], ['stability', 'stability'],
+  ['elevenlabs', 'elevenlabs'], ['eleven labs', 'elevenlabs'],
+  ['notion', 'notion'],
+  ['github', 'github'], ['copilot', 'github'],
+  ['grok', 'x'], [' xai', 'x'],
+  ['即梦', 'jimeng'], ['jimeng', 'jimeng'], ['启梦', 'jimeng'], ['qimeng', 'jimeng'],
+  ['讯飞', 'iflytek'], ['iflytek', 'iflytek'], ['星火', 'iflytek'],
+  ['flowith', 'flowith'], ['知识库', 'flowith'],
+];
+
+function nameToSlug(name: string): string {
+  const lower = name.toLowerCase();
+  for (const [key, slug] of NAME_RULES) {
+    if (lower.includes(key.toLowerCase())) return slug;
+  }
+  return '';
+}
+
+// ─── Render helpers ───────────────────────────────────────────────────────────
+const ICON_BORDER = '1px solid rgba(0,0,0,0.08)';
+
+/** PNG icon：22% 圆角填满 size，iOS App Icon 风格 */
+function ImgIcon({ src, size }: { src: string; size: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-      <path d={path} />
-    </svg>
+    <img src={src} width={size} height={size}
+      style={{ objectFit: 'cover', borderRadius: '22%', display: 'block', flexShrink: 0, border: ICON_BORDER }} />
   );
 }
 
-export default function BrandIcon({ name, size = 16 }: BrandIconProps) {
-  if (name === 'GPT') return <SvgIcon path={PATH_OPENAI} size={size} />;
-  if (name === 'Gemini') return <SvgIcon path={PATH_GEMINI} size={size} />;
-  if (name.includes('Midjourney')) return <SvgIcon path={PATH_MIDJOURNEY} size={size} />;
-  if (name.includes('API')) return <Key size={size} />;
-  if (name.includes('知识库')) return <BookOpen size={size} />;
-  if (name.includes('PSai') || name.toLowerCase().includes('ps'))
-    return <SvgIcon path={PATH_PHOTOSHOP} size={size} />;
-  return <BookOpen size={size} />;
+/** badge 内容：SVG path 或首字母文字 */
+function BadgeContent({ path, letter, size, fg }: {
+  path?: string; letter?: string; size: number; fg: string;
+}) {
+  if (path)
+    return <svg width={size * 0.62} height={size * 0.62} viewBox="0 0 24 24" fill={fg}><path d={path} /></svg>;
+  const st = { fontSize: size * 0.46, fontWeight: 700, color: fg, fontFamily: 'system-ui,sans-serif', lineHeight: 1 };
+  return <span style={st}>{letter}</span>;
+}
+
+/** SVG path / 首字母 badge：品牌色背景 + 22% 圆角 */
+function BadgeIcon({ path, letter, slug, size }: {
+  path?: string; letter?: string; slug: string; size: number;
+}) {
+  const [bg, fg] = BRAND_COLORS[slug] ?? ['#374151', '#ffffff'];
+  const st = { width: size, height: size, borderRadius: '22%', background: bg, border: ICON_BORDER,
+               display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 };
+  return <div style={st}><BadgeContent path={path} letter={letter} size={size} fg={fg} /></div>;
+}
+
+// ─── BrandIcon ────────────────────────────────────────────────────────────────
+interface BrandIconProps {
+  name: string;
+  icon?: string;
+  size?: number;
+}
+
+function FallbackBadge({ icon: Icon, size }: { icon: React.ElementType; size: number }) {
+  const st = { width: size, height: size, borderRadius: '22%', background: '#f3f4f6',
+               border: ICON_BORDER, display: 'flex', alignItems: 'center',
+               justifyContent: 'center', flexShrink: 0 };
+  return <div style={st}><Icon size={size * 0.55} color="#374151" /></div>;
+}
+
+export default function BrandIcon({ name, icon, size = 16 }: BrandIconProps) {
+  const slug = icon || nameToSlug(name);
+  if (slug) {
+    const def = ICON_LIST.find(d => d.slug === slug);
+    if (def?.img)  return <ImgIcon src={def.img} size={size} />;
+    if (def?.path) return <BadgeIcon path={def.path} slug={slug} size={size} />;
+    if (def)       return <BadgeIcon letter={def.label.charAt(0).toUpperCase()} slug={slug} size={size} />;
+  }
+  if (name.toLowerCase().includes('api') || name.includes('秘钥')) return <FallbackBadge icon={Key} size={size} />;
+  return <FallbackBadge icon={BookOpen} size={size} />;
 }

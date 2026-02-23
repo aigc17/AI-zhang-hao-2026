@@ -7,19 +7,23 @@
  */
 
 import React from 'react';
-import { Category } from '../types';
-import { Trash2 } from 'lucide-react';
-import BrandIcon from './BrandIcon';
+import { Category } from '../../types';
+import { Trash2, Pencil } from 'lucide-react';
+import BrandIcon from '../BrandIcon';
 
 interface CategoryGridProps {
   categories: Category[];
+  isAdmin: boolean;
   onSelect: (id: number) => void;
+  onEdit: (e: React.MouseEvent, id: number) => void;
   onDelete: (e: React.MouseEvent, id: number) => void;
 }
 
-function CategoryCard({ category, onSelect, onDelete }: {
+function CategoryCard({ category, isAdmin, onSelect, onEdit, onDelete }: {
   category: Category;
+  isAdmin: boolean;
   onSelect: () => void;
+  onEdit: (e: React.MouseEvent) => void;
   onDelete: (e: React.MouseEvent) => void;
 }) {
   return (
@@ -28,16 +32,17 @@ function CategoryCard({ category, onSelect, onDelete }: {
       className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 hover:shadow-md hover:border-neutral-300 transition-all cursor-pointer group flex flex-col h-40"
     >
       <div className="flex justify-between items-start mb-2">
-        <div className="w-10 h-10 bg-neutral-100 text-neutral-700 rounded-xl flex items-center justify-center group-hover:bg-neutral-900 group-hover:text-white transition-colors">
-          <BrandIcon name={category.name} size={20} />
-        </div>
-        <button
-          onClick={onDelete}
-          className="p-1.5 text-neutral-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-          title="删除卡片"
-        >
-          <Trash2 size={16} />
-        </button>
+        <BrandIcon name={category.name} icon={category.icon} size={32} />
+        {isAdmin && (
+          <div className="flex items-center gap-1">
+            <button onClick={onEdit} className="p-1.5 text-neutral-300 hover:text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100" title="编辑分类">
+              <Pencil size={15} />
+            </button>
+            <button onClick={onDelete} className="p-1.5 text-neutral-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100" title="删除分类">
+              <Trash2 size={15} />
+            </button>
+          </div>
+        )}
       </div>
       <h3 className="font-semibold text-lg text-neutral-900 mt-auto">{category.name}</h3>
       {category.description && (
@@ -47,7 +52,7 @@ function CategoryCard({ category, onSelect, onDelete }: {
   );
 }
 
-export default function CategoryGrid({ categories, onSelect, onDelete }: CategoryGridProps) {
+export default function CategoryGrid({ categories, isAdmin, onSelect, onEdit, onDelete }: CategoryGridProps) {
   if (categories.length === 0) {
     return (
       <div className="text-center py-20 text-neutral-500 bg-white rounded-2xl border border-neutral-200 border-dashed">
@@ -62,7 +67,9 @@ export default function CategoryGrid({ categories, onSelect, onDelete }: Categor
         <CategoryCard
           key={category.id}
           category={category}
+          isAdmin={isAdmin}
           onSelect={() => onSelect(category.id)}
+          onEdit={(e) => onEdit(e, category.id)}
           onDelete={(e) => onDelete(e, category.id)}
         />
       ))}
