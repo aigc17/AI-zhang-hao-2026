@@ -13,7 +13,7 @@ import { createServer as createViteServer } from 'vite';
 import Database from 'better-sqlite3';
 import path from 'path';
 
-const PORT = 3000;
+const PORT = 6721;
 const DB_PATH = 'accounts.db';
 
 // ─── DB Init ──────────────────────────────────────────────────────────────────
